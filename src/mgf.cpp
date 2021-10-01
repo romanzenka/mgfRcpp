@@ -78,7 +78,7 @@ List parseMgf(String filename, bool displayProgress=true) {
 
   while(!feof(fp)) {
     if(Progress::check_abort()) {
-      return NULL;
+      return R_NilValue;
     }
 
     p.update((unsigned long)ftell(fp));
