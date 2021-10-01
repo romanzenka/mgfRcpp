@@ -41,12 +41,19 @@ List parseMgf(String filename, bool displayProgress=true) {
   Progress p(fileSize, displayProgress);
 
   int state = 0;
-  size_t len = 0;
+  ssize_t len = 0;
   long lineNum = 0;
 
   // Kick it off by reading first line
-  len=getline(&line, &bufferLength, fp);
-  lineNum++;
+#define READ_LINE                                              \
+  if(fgets(line, bufferLength, fp)==NULL) {                  \
+    len=0;                                                     \
+  } else {                                                     \
+    len=strlen(line);                                          \
+  }                                                            \
+  lineNum++;                                                   \
+
+  READ_LINE;
 
   // Buffers for spectrum mz/intensities
   const int maxFragments = 102400;
@@ -98,8 +105,7 @@ List parseMgf(String filename, bool displayProgress=true) {
 
         state = 1; // In begin ions
       }
-      len=getline(&line, &bufferLength, fp);
-      lineNum++;
+      READ_LINE;
     }
 
     while (len != -1 && state==1) {
@@ -156,8 +162,7 @@ List parseMgf(String filename, bool displayProgress=true) {
 
         state = 0; // Wait for begin ions
       }
-      len=getline(&line, &bufferLength, fp);
-      lineNum++;
+      READ_LINE;
     }
 
     // Numbers
@@ -176,8 +181,7 @@ List parseMgf(String filename, bool displayProgress=true) {
           REprintf("Error on row %ld", lineNum);
           stop("Too many fragments in a spectrum");
         }
-        len=getline(&line, &bufferLength, fp);
-        lineNum++;
+        READ_LINE;
       } else {
         // Still after BEGIN IONS
         state=1;
