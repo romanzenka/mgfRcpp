@@ -1,0 +1,12 @@
+Package: mgfRcpp
+Type: Package
+Title: Read Mascot Generic Format (.mgf) using Rcpp
+Version: 1.0
+Date: 2021-10-01
+Author: Roman Zenka
+Maintainer: Roman Zenka <zenka.roman@mayo.edu>
+Description: Very crude package to load .mgf files quickly and without
+  too much memory overhead.
+License: GPL (>= 2)
+Imports: Rcpp (>= 1.0.7)
+LinkingTo: Rcpp
