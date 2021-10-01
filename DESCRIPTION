@@ -8,5 +8,5 @@ Maintainer: Roman Zenka <zenka.roman@mayo.edu>
 Description: Very crude package to load .mgf files quickly and without
   too much memory overhead.
 License: GPL (>= 2)
-Imports: Rcpp (>= 1.0.7)
-LinkingTo: Rcpp
+Imports: Rcpp (>= 1.0.7), RcppProgress (>= 0.4.2)
+LinkingTo: Rcpp, RcppProgress

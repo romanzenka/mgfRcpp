@@ -1,3 +1,6 @@
+// [[Rcpp::depends(RcppProgress)]]
+#include <progress.hpp>
+#include <progress_bar.hpp>
 
 #include <Rcpp.h>
 #include <stdio.h>
@@ -7,7 +10,7 @@
 using namespace Rcpp;
 
 // [[Rcpp::export]]
-List parseMgf(String filename) {
+List parseMgf(String filename, bool displayProgress=true) {
   FILE* fp; // File being read
   char* line; // Current line
 
@@ -34,6 +37,8 @@ List parseMgf(String filename) {
   fseek(fp, 0, SEEK_END);
   unsigned long fileSize = (unsigned long)ftell(fp);
   fseek(fp, 0, SEEK_SET);
+
+  Progress p(fileSize, displayProgress);
 
   int state = 0;
   size_t len = 0;
@@ -65,6 +70,12 @@ List parseMgf(String filename) {
   intensity.reserve(fileSize / 16);
 
   while(!feof(fp)) {
+    if(Progress::check_abort()) {
+      return NULL;
+    }
+
+    p.update((unsigned long)ftell(fp));
+
     // This loop would alternate between various state loops that
     // do just one job for that specific state.
     // Each block, when it exits, would leave the next line that made it quit
@@ -73,7 +84,6 @@ List parseMgf(String filename) {
     // Waiting for begin ions
     while (len != -1 && state==0) {
       if(strncmp(line, "BEGIN IONS\n", len)==0) {
-        printf("Begin ions on line %ld\n", lineNum);
         spectrumNumber++; // New spectrum started
 
         title.push_back("");
@@ -102,7 +112,7 @@ List parseMgf(String filename) {
         if(sscanf(line+12, "%lf", &num)==-1) {
           fclose(fp);
           if(line) free(line);
-          fprintf(stderr, "Error on row %ld", lineNum);
+          REprintf("Error on row %ld", lineNum);
           stop("Malformed RTINSECONDS entry");
         }
         // rtInSeconds = std::string(line, 12, len-12-1);
@@ -119,7 +129,7 @@ List parseMgf(String filename) {
         if(sscanf(line+8, "%lf", &num)==-1) {
           fclose(fp);
           if(line) free(line);
-          fprintf(stderr, "Error on row %ld", lineNum);
+          REprintf("Error on row %ld", lineNum);
           stop("Malformed PEPMASS entry");
         }
         pepmass[spectrumNumber] = num;
@@ -131,7 +141,6 @@ List parseMgf(String filename) {
         break; // Leave the line in buffer
       }
       else if(strncmp(line, "END IONS\n", len)==0) {
-        printf("End ions on line %ld\n", lineNum);
 
         if (fragment>0) {
           mz.reserve(mz.size()+fragment);
@@ -157,14 +166,14 @@ List parseMgf(String filename) {
         if(sscanf(line, "%lf %lf", &(mzVals[fragment]), &(intVals[fragment])) == -1) {
           fclose(fp);
           if(line) free(line);
-          fprintf(stderr, "Error on row %ld", lineNum);
+          REprintf("Error on row %ld", lineNum);
           stop("Malformed mz/intensity pair");
         }
         fragment++;
         if(fragment >= maxFragments) {
           fclose(fp);
           if(line) free(line);
-          fprintf(stderr, "Error on row %ld", lineNum);
+          REprintf("Error on row %ld", lineNum);
           stop("Too many fragments in a spectrum");
         }
         len=getline(&line, &bufferLength, fp);
