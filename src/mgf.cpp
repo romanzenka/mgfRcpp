@@ -1,4 +1,7 @@
 // [[Rcpp::depends(RcppProgress)]]
+
+#define _FILE_OFFSET_BITS 64
+
 #include <progress.hpp>
 #include <progress_bar.hpp>
 
@@ -8,6 +11,10 @@
 #include <array>
 #include <vector>
 using namespace Rcpp;
+
+#define FSEEK _fseeki64
+#define FTELL _ftelli64
+#define FSIZE __int64
 
 // [[Rcpp::export]]
 List parseMgf(String filename, bool displayProgress=true) {
@@ -28,17 +35,17 @@ List parseMgf(String filename, bool displayProgress=true) {
     stop("Cannot allocate memory");
   }
 
-  fp = fopen(filename.get_cstring(), "r");
+  fp = fopen(filename.get_cstring(), "rb");
   if (!fp) {
     free(line);
     stop("Cannot open file");
   }
 
-  fseek(fp, 0, SEEK_END);
-  unsigned long fileSize = (unsigned long)ftell(fp);
-  fseek(fp, 0, SEEK_SET);
+  FSEEK(fp, 0, SEEK_END);
+  FSIZE fileSize = ftello(fp);
+  FSEEK(fp, 0, SEEK_SET);
 
-  Progress p(fileSize, displayProgress);
+  Progress p(1000, displayProgress);
 
   int state = 0;
   ssize_t len = 0;
@@ -76,12 +83,23 @@ List parseMgf(String filename, bool displayProgress=true) {
   mz.reserve(fileSize / 16);
   intensity.reserve(fileSize / 16);
 
+  int progressCount = -1;
+
   while(!feof(fp)) {
     if(Progress::check_abort()) {
       return R_NilValue;
     }
 
-    p.update(((double)ftell(fp))/fileSize);
+    // Only update each 100 spectra to speed things up
+    progressCount++;
+    progressCount %= 100;
+
+    if(progressCount==0) {
+      FSIZE filePos = FTELL(fp);
+      double progress = ((double)filePos) * 1000.0  / ((double)fileSize);
+
+      p.update((long)progress);
+    }
 
     // This loop would alternate between various state loops that
     // do just one job for that specific state.
@@ -168,12 +186,9 @@ List parseMgf(String filename, bool displayProgress=true) {
     // Numbers
     while(len != -1 && state == 2) {
       if (line[0] >= '0' && line[0] <= '9') {
-        if(sscanf(line, "%lf %lf", &(mzVals[fragment]), &(intVals[fragment])) == -1) {
-          fclose(fp);
-          if(line) free(line);
-          REprintf("Error on row %ld", lineNum);
-          stop("Malformed mz/intensity pair");
-        }
+        char *lp;
+        mzVals[fragment] = strtod(line, &lp);
+        intVals[fragment] = strtod(lp, NULL);
         fragment++;
         if(fragment >= maxFragments) {
           fclose(fp);
