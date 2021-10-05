@@ -81,7 +81,7 @@ List parseMgf(String filename, bool displayProgress=true) {
       return R_NilValue;
     }
 
-    p.update((unsigned long)ftell(fp));
+    p.update(((double)ftell(fp))/fileSize);
 
     // This loop would alternate between various state loops that
     // do just one job for that specific state.
