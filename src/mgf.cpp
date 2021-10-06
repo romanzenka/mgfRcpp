@@ -2,6 +2,21 @@
 
 #define _FILE_OFFSET_BITS 64
 
+
+#ifdef __WIN64
+
+#define FSEEK _fseeki64
+#define FTELL _ftelli64
+#define FSIZE __int64
+
+#else
+
+#define FSEEK fseeko
+#define FTELL ftello
+#define FSIZE off_t
+
+#endif
+
 #include <progress.hpp>
 #include <progress_bar.hpp>
 
@@ -11,10 +26,6 @@
 #include <array>
 #include <vector>
 using namespace Rcpp;
-
-#define FSEEK _fseeki64
-#define FTELL _ftelli64
-#define FSIZE __int64
 
 // [[Rcpp::export]]
 List parseMgf(String filename, bool displayProgress=true) {
@@ -214,14 +225,14 @@ List parseMgf(String filename, bool displayProgress=true) {
     Named("spectra")=DataFrame::create(
       Named("title")=StringVector(title.begin(), title.end()),
       Named("rtInSeconds")=NumericVector(rtInSeconds.begin(), rtInSeconds.end()),
-      Named("pepmass")=NumericVector(pepmass.begin(), pepmass.end()),
+      Named("pepMass")=NumericVector(pepmass.begin(), pepmass.end()),
       Named("charge")=StringVector(charge.begin(), charge.end()),
       Named("scans")=StringVector(scans.begin(), scans.end()),
       Named("firstEntry")=NumericVector(firstEntry.begin(), firstEntry.end()),
       Named("lastEntry")=NumericVector(lastEntry.begin(), lastEntry.end())
     ),
     Named("fragments")=DataFrame::create(
-      Named("mz")=NumericVector(mz.begin(), mz.end()),
+      Named("mZ")=NumericVector(mz.begin(), mz.end()),
       Named("intensity")=NumericVector(intensity.begin(), intensity.end())
     )
   );
