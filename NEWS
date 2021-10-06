@@ -1,0 +1,5 @@
+Changes in mgfRcpp 1.0.1
+    o    bugfix for files > 4GB
+
+Changes in mgfRcpp 1.0
+    o    initial release
