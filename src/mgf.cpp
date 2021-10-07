@@ -64,12 +64,20 @@ List parseMgf(String filename, bool displayProgress=true) {
 
   // Kick it off by reading first line
 #define READ_LINE                                              \
-  if(fgets(line, bufferLength, fp)==NULL) {                  \
+  if(fgets(line, bufferLength, fp)==NULL) {                    \
     len=0;                                                     \
   } else {                                                     \
     len=strlen(line);                                          \
   }                                                            \
-  lineNum++;                                                   \
+  if(len>0 && line[len-1]=='\n') {                             \
+    len--;                                                     \
+    line[len] = 0;                                             \
+  }                                                            \
+  if(len>0 && line[len-1]=='\r') {                             \
+    len--;                                                     \
+    line[len] = 0;                                             \
+  }                                                            \
+  lineNum++;
 
   READ_LINE;
 
@@ -119,7 +127,7 @@ List parseMgf(String filename, bool displayProgress=true) {
 
     // Waiting for begin ions
     while (len != -1 && state==0) {
-      if(strncmp(line, "BEGIN IONS\n", len)==0) {
+      if(strncmp(line, "BEGIN IONS", len)==0) {
         spectrumNumber++; // New spectrum started
 
         title.push_back("");
@@ -140,7 +148,7 @@ List parseMgf(String filename, bool displayProgress=true) {
     while (len != -1 && state==1) {
       // After begin ions
       if(strncmp(line, "TITLE=", 6)==0) { // 6==strlen(TITLE=)
-        title[spectrumNumber] = std::string(line, 6, len-6-1);
+        title[spectrumNumber] = std::string(line, 6, len-6);
       }
       else if(strncmp(line, "RTINSECONDS=", 12)==0) { // 12==strlen(RTINSECONDS=)
         double num;
@@ -154,10 +162,10 @@ List parseMgf(String filename, bool displayProgress=true) {
         rtInSeconds[spectrumNumber] = num;
       }
       else if(strncmp(line, "CHARGE=", 7)==0) { // 7==strlen(CHARGE=)
-        charge[spectrumNumber] = std::string(line, 7, len-7-1);
+        charge[spectrumNumber] = std::string(line, 7, len-7);
       }
       else if(strncmp(line, "SCANS=", 6)==0) { // 6==strlen(SCANS=)
-        scans[spectrumNumber] = std::string(line, 6, len-6-1);
+        scans[spectrumNumber] = std::string(line, 6, len-6);
       }
       else if(strncmp(line, "PEPMASS=", 8)==0) { // 8==strlen(PEPMASS=)
         double num;
